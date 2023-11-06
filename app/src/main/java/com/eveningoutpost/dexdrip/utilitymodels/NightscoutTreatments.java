@@ -130,7 +130,7 @@ public class NightscoutTreatments {
                     Treatments existing = Treatments.byuuid(nightscout_id);
                     if (existing == null)
                         existing = Treatments.byuuid(uuid);
-                    if ((existing == null) && (!from_xdrip)) {
+                    if (existing == null) {
                         // check for close timestamp duplicates perhaps
                         existing = Treatments.byTimestamp(timestamp, 60000);
                         if (!((existing != null) && (JoH.roundDouble(existing.insulin, 2) == JoH.roundDouble(insulin, 2))
@@ -171,32 +171,28 @@ public class NightscoutTreatments {
                             UserError.Log.d(TAG, "Skipping treatment as it appears identical to one we already have: " + JoH.dateTimeText(timestamp) + " " + insulin + " " + carbs + " " + notes);
                         }
                     } else {
-                        if (existing != null) {
-                            if (d)
-                                UserError.Log.d(TAG, "Treatment with uuid: " + uuid + " / " + nightscout_id + " already exists");
-                            if (notes == null) notes = "";
-                            if (existing.notes == null) existing.notes = "";
-                            if ((existing.carbs != carbs) || (existing.insulin != insulin) || ((existing.timestamp / Constants.SECOND_IN_MS) != (timestamp / Constants.SECOND_IN_MS))
-                                    || (!existing.notes.contains(notes))) {
-                                UserError.Log.ueh(TAG, "Treatment changes from Nightscout: " + carbs + " Insulin: " + insulin + " timestamp: " + JoH.dateTimeText(timestamp) + " " + notes + " " + " vs " + existing.carbs + " " + existing.insulin + " " + JoH.dateTimeText(existing.timestamp) + " " + existing.notes);
-                                existing.carbs = carbs;
-                                existing.insulin = insulin;
-                                if (insulin > 0)
-                                    existing.setInsulinJSON(injections);
-                                existing.timestamp = timestamp;
-                                existing.created_at = DateUtil.toISOString(timestamp);
-                                if (existing.notes.length() > 0) {
-                                    existing.notes += " \u2192 " + notes;
-                                } else {
-                                    existing.notes = notes;
-                                }
-                                existing.save();
-                                if (Home.get_show_wear_treatments())
-                                    pushTreatmentSyncToWatch(existing, false);
-                                new_data = true;
+                        if (d)
+                            UserError.Log.d(TAG, "Treatment with uuid: " + uuid + " / " + nightscout_id + " already exists");
+                        if (notes == null) notes = "";
+                        if (existing.notes == null) existing.notes = "";
+                        if ((existing.carbs != carbs) || (existing.insulin != insulin) || ((existing.timestamp / Constants.SECOND_IN_MS) != (timestamp / Constants.SECOND_IN_MS))
+                                || (!existing.notes.contains(notes))) {
+                            UserError.Log.ueh(TAG, "Treatment changes from Nightscout: " + carbs + " Insulin: " + insulin + " timestamp: " + JoH.dateTimeText(timestamp) + " " + notes + " " + " vs " + existing.carbs + " " + existing.insulin + " " + JoH.dateTimeText(existing.timestamp) + " " + existing.notes);
+                            existing.carbs = carbs;
+                            existing.insulin = insulin;
+                            if (insulin > 0)
+                                existing.setInsulinJSON(injections);
+                            existing.timestamp = timestamp;
+                            existing.created_at = DateUtil.toISOString(timestamp);
+                            if (existing.notes.length() > 0) {
+                                existing.notes += " \u2192 " + notes;
+                            } else {
+                                existing.notes = notes;
                             }
-                        } else {
-                            UserError.Log.d(TAG, "Skipping record creation as original source is xDrip");
+                            existing.save();
+                            if (Home.get_show_wear_treatments())
+                                pushTreatmentSyncToWatch(existing, false);
+                            new_data = true;
                         }
                     }
                 }
