@@ -32,6 +32,8 @@ public class Entry extends BaseMessage {
     @Expose
     public int sgv;
     @Expose
+    public int mbg;
+    @Expose
     public String sysTime;
     @Expose
     public String type;

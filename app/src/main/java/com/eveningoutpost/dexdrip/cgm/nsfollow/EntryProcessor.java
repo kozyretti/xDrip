@@ -1,8 +1,11 @@
 package com.eveningoutpost.dexdrip.cgm.nsfollow;
 
 import com.eveningoutpost.dexdrip.models.BgReading;
+import com.eveningoutpost.dexdrip.models.BloodTest;
+import com.eveningoutpost.dexdrip.models.JoH;
 import com.eveningoutpost.dexdrip.models.Sensor;
 import com.eveningoutpost.dexdrip.models.UserError;
+import com.eveningoutpost.dexdrip.utilitymodels.Constants;
 import com.eveningoutpost.dexdrip.utilitymodels.Inevitable;
 import com.eveningoutpost.dexdrip.utilitymodels.Unitized;
 import com.eveningoutpost.dexdrip.cgm.nsfollow.messages.Entry;
@@ -35,6 +38,12 @@ public class EntryProcessor {
 
                 final long recordTimestamp = entry.getTimeStamp();
                 if (recordTimestamp > 0) {
+
+                    if (entry.type.equals("mbg")) {
+                        processMbg(entry, recordTimestamp);
+                        continue;
+                    }
+
                     final BgReading existing = BgReading.getForPreciseTimestamp(recordTimestamp, 10000);
                     if (existing == null) {
                         UserError.Log.d(TAG, "NEW NEW NEW New entry: " + entry.toS());
@@ -65,6 +74,33 @@ public class EntryProcessor {
                 UserError.Log.d(TAG, "Entry is null");
             }
         }
-
     }
+
+    private static void processMbg(final Entry entry, long timestamp_ms) {
+        final BloodTest existing = BloodTest.byUUID(entry._id);
+        if (existing == null) {
+            final BloodTest bt = new BloodTest();
+            bt.timestamp = timestamp_ms;
+            bt.mgdl = entry.mbg;
+            bt.uuid = entry._id;
+            bt.created_timestamp = JoH.tsl();
+            bt.state = BloodTest.STATE_VALID;
+            bt.source = "Nightscout Follow";
+            bt.saveit();
+        }
+        else {
+            //if (d)
+                UserError.Log.d(TAG, "Already a bloodtest with uuid: " + entry._id);
+            if(existing.mgdl != entry.mbg || existing.timestamp / Constants.SECOND_IN_MS != timestamp_ms / Constants.SECOND_IN_MS) {
+                UserError.Log.ueh(TAG, "Bloodtest changes from Nightscout: " + entry.mbg + " timestamp: " + JoH.dateTimeText(timestamp_ms) + " vs " + existing.mgdl + " " + JoH.dateTimeText(existing.timestamp));
+                existing.timestamp = timestamp_ms;
+                existing.mgdl = entry.mbg;
+                existing.created_timestamp = JoH.tsl();
+                existing.state = BloodTest.STATE_VALID;
+                existing.source = "Nightscout Follow";
+                existing.saveit();
+            }
+        }
+    }
+
 }
