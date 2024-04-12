@@ -1,5 +1,6 @@
 package com.eveningoutpost.dexdrip.utils;
 
+import static com.eveningoutpost.dexdrip.utils.DexCollectionType.getBestCollectorHardwareName;
 import static com.eveningoutpost.dexdrip.xdrip.gs;
 
 import android.Manifest;
@@ -34,10 +35,10 @@ import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.preference.RingtonePreference;
 import android.preference.SwitchPreference;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.LocalBroadcastManager;
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import android.text.InputFilter;
 import android.text.TextUtils;
 import android.view.Menu;
@@ -58,6 +59,7 @@ import com.eveningoutpost.dexdrip.WidgetUpdateService;
 import com.eveningoutpost.dexdrip.alert.Registry;
 import com.eveningoutpost.dexdrip.calibrations.PluggableCalibration;
 import com.eveningoutpost.dexdrip.cgm.carelinkfollow.CareLinkFollowService;
+import com.eveningoutpost.dexdrip.cgm.carelinkfollow.auth.CareLinkAuthType;
 import com.eveningoutpost.dexdrip.cgm.nsfollow.NightscoutFollow;
 import com.eveningoutpost.dexdrip.cgm.sharefollow.ShareFollowService;
 import com.eveningoutpost.dexdrip.cgm.webfollow.Cpref;
@@ -1255,8 +1257,10 @@ public class Preferences extends BasePreferenceActivity implements SearchPrefere
             }
 
 
-            final Preference nsFollowDownload = findPreference("nsfollow_download_treatments");
+            final Preference nsFollowDownload = findPreference("nsfollow_download_treatments_screen");
             final Preference nsFollowUrl = findPreference("nsfollow_url");
+            final Preference nsFollowLag = findPreference("nsfollow_lag"); // Show the Nightscout follow wake delay setting only when NS follow is the data source
+            bindPreferenceSummaryToValue(findPreference("nsfollow_lag")); // Show the selected value as summary
             try {
                 nsFollowUrl.setOnPreferenceChangeListener((preference, newValue) -> {
                     NightscoutFollow.resetInstance();
@@ -1349,17 +1353,18 @@ public class Preferences extends BasePreferenceActivity implements SearchPrefere
                             public void run() {
                                 try {
                                     String country = Pref.getString("clfollow_country", "").toLowerCase();
-                                    if (country.equals(""))
-                                        JoH.static_toast(preference.getContext(), "Country is required!", Toast.LENGTH_LONG);
-                                    else {
+                                    if (country.equals("")) {
+                                        JoH.static_toast(preference.getContext(), xdrip.gs(R.string.carelink_auth_country_required), Toast.LENGTH_LONG);
+                                    } else {
                                         CareLinkAuthenticator authenticator = new CareLinkAuthenticator(country, CareLinkCredentialStore.getInstance());
-                                        if (authenticator.authenticate(getActivity())) {
-                                            JoH.static_toast(preference.getContext(), "Login completed!", Toast.LENGTH_LONG);
+                                        if (authenticator.authenticate(getActivity(), CareLinkAuthType.MobileApp)) {
+                                            JoH.static_toast(preference.getContext(), xdrip.gs(R.string.carelink_auth_status_authenticated), Toast.LENGTH_LONG);
                                             CareLinkFollowService.resetInstanceAndInvalidateSession();
                                             CollectionServiceStarter.restartCollectionServiceBackground();
                                         }
-                                        else
-                                            JoH.static_toast(preference.getContext(), "Login failed!", Toast.LENGTH_LONG);
+                                        else {
+                                            JoH.static_toast(preference.getContext(), xdrip.gs(R.string.carelink_auth_status_not_authenticated), Toast.LENGTH_LONG);
+                                        }
                                     }
                                 } catch (InterruptedException e) {
 
@@ -1721,8 +1726,19 @@ public class Preferences extends BasePreferenceActivity implements SearchPrefere
                 try {
                     collectionCategory.removePreference(nsFollowUrl);
                     collectionCategory.removePreference(nsFollowDownload);
+                    collectionCategory.removePreference(nsFollowLag);
                 } catch (Exception e) {
                     //
+                }
+            }
+
+            if (getBestCollectorHardwareName().equals("G7")) { // Remove battery options, from G5/G6/Dex1/G7 Debug Settings, if we are using G7 or One+
+                try {
+                    PreferenceScreen screen = (PreferenceScreen) findPreference("xdrip_plus_g5_extra_settings");
+                    Preference pref = getPreferenceManager().findPreference("dex_battery_category");
+                    screen.removePreference(pref);
+                } catch (Exception e) {
+                    UserError.Log.wtf(TAG, "Failed to remove G7 battery options");
                 }
             }
 
@@ -2040,6 +2056,15 @@ public class Preferences extends BasePreferenceActivity implements SearchPrefere
                         if ((Boolean) newValue) {
                             Inevitable.task("check-health-connect", 300, () -> HealthGamut.init(getActivity()));
                         }
+                        return true;
+                    });
+                } catch (Exception e) {
+                    //
+                }
+
+                try {
+                    findPreference("health_connect_manage").setOnPreferenceClickListener((preference) -> {
+                        HealthGamut.init(getActivity()).openPermissionManager();
                         return true;
                     });
                 } catch (Exception e) {
@@ -2417,6 +2442,7 @@ public class Preferences extends BasePreferenceActivity implements SearchPrefere
                     if (collectionType == DexCollectionType.NSFollow) {
                         collectionCategory.addPreference(nsFollowUrl);
                         collectionCategory.addPreference(nsFollowDownload);
+                        collectionCategory.addPreference(nsFollowLag);
                     }
 
 
@@ -2493,6 +2519,7 @@ public class Preferences extends BasePreferenceActivity implements SearchPrefere
            //  removePreferenceFromCategory("use_ob1_g5_collector_service", "ob1_options");
            //  removePreferenceFromCategory("ob1_g5_fallback_to_xdrip", "ob1_options");
            //  removePreferenceFromCategory("always_unbond_G5", "ob1_options");
+           //  removePreferenceFromCategory("always_get_new_keys", "ob1_options");
        }
 
        private void removePreferenceFromCategory(final String preference, final String category) {
