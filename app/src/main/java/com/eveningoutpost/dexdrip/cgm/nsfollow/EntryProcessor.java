@@ -7,6 +7,7 @@ import com.eveningoutpost.dexdrip.models.Sensor;
 import com.eveningoutpost.dexdrip.models.UserError;
 import com.eveningoutpost.dexdrip.utilitymodels.Constants;
 import com.eveningoutpost.dexdrip.utilitymodels.Inevitable;
+import com.eveningoutpost.dexdrip.utilitymodels.Pref;
 import com.eveningoutpost.dexdrip.utilitymodels.Unitized;
 import com.eveningoutpost.dexdrip.cgm.nsfollow.messages.Entry;
 
@@ -31,6 +32,8 @@ public class EntryProcessor {
 
         final Sensor sensor = Sensor.createDefaultIfMissing();
 
+        boolean skip_from_xdrip = Pref.getBooleanDefaultFalse("cloud_storage_api_skip_download_from_xdrip");
+
         for (final Entry entry : entries) {
             if (entry != null) {
                 UserError.Log.d(TAG, "ENTRY: " + entry.toS());
@@ -39,7 +42,7 @@ public class EntryProcessor {
                 final long recordTimestamp = entry.getTimeStamp();
                 if (recordTimestamp > 0) {
 
-                    if (entry.type.equals("mbg")) {
+                    if (!skip_from_xdrip && entry.type.equals("mbg")) {
                         processMbg(entry, recordTimestamp);
                         continue;
                     }
@@ -79,6 +82,7 @@ public class EntryProcessor {
     private static void processMbg(final Entry entry, long timestamp_ms) {
         final BloodTest existing = BloodTest.byUUID(entry._id);
         if (existing == null) {
+            UserError.Log.ueh(TAG, "NEW BG Manual value: " + Unitized.unitized_string_static(entry.mbg) + " timestamp: " + JoH.dateTimeText(timestamp_ms));
             final BloodTest bt = new BloodTest();
             bt.timestamp = timestamp_ms;
             bt.mgdl = entry.mbg;
@@ -89,10 +93,10 @@ public class EntryProcessor {
             bt.saveit();
         }
         else {
-            //if (d)
+            //if (false)
                 UserError.Log.d(TAG, "Already a bloodtest with uuid: " + entry._id);
             if(existing.mgdl != entry.mbg || existing.timestamp / Constants.SECOND_IN_MS != timestamp_ms / Constants.SECOND_IN_MS) {
-                UserError.Log.ueh(TAG, "Bloodtest changes from Nightscout: " + entry.mbg + " timestamp: " + JoH.dateTimeText(timestamp_ms) + " vs " + existing.mgdl + " " + JoH.dateTimeText(existing.timestamp));
+                UserError.Log.d(TAG, "Bloodtest changes: " + Unitized.unitized_string_static(entry.mbg) + " old: " + Unitized.unitized_string_static(existing.mgdl));
                 existing.timestamp = timestamp_ms;
                 existing.mgdl = entry.mbg;
                 existing.created_timestamp = JoH.tsl();

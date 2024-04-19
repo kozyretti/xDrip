@@ -30,6 +30,7 @@ public class NightscoutTreatments {
 
     public static boolean processTreatmentResponse(final String response) throws Exception {
         boolean new_data = false;
+        boolean skip_from_xdrip = Pref.getBooleanDefaultFalse("cloud_storage_api_skip_download_from_xdrip");
 
         final JSONArray jsonArray = new JSONArray(response);
         for (int i = 0; i < jsonArray.length(); i++) {
@@ -55,8 +56,6 @@ public class NightscoutTreatments {
             } catch (JSONException e) {
                 //
             }
-
-            boolean skip_from_xdrip = Pref.getBooleanDefaultFalse("cloud_storage_api_skip_download_from_xdrip");
 
             // extract blood test data if present
             try {
