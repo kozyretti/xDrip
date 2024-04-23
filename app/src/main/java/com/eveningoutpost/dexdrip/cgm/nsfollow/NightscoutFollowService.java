@@ -28,7 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.eveningoutpost.dexdrip.utilitymodels.BgGraphBuilder.DEXCOM_PERIOD;
+//import static com.eveningoutpost.dexdrip.utilitymodels.BgGraphBuilder.DEXCOM_PERIOD;
 import static com.eveningoutpost.dexdrip.utils.DexCollectionType.NSFollow;
 import static com.eveningoutpost.dexdrip.xdrip.gs;
 
@@ -44,7 +44,8 @@ import static com.eveningoutpost.dexdrip.xdrip.gs;
 public class NightscoutFollowService extends ForegroundService {
 
     private static final String TAG = "NightscoutFollow";
-    private static final long SAMPLE_PERIOD = DEXCOM_PERIOD;
+    //private static final long SAMPLE_PERIOD = DEXCOM_PERIOD;
+    public static final long SAMPLE_PERIOD = 120_000;   // 2 ticks in 2 minutes: 0:20 + 1:40
 
     protected static volatile String lastState = "";
 
