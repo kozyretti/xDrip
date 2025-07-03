@@ -2465,7 +2465,7 @@ public class Home extends ActivityWithMenu implements ActivityCompat.OnRequestPe
             updateCurrentBgInfoCommon(collector, notificationText);
         }
         if (collector.equals(DexCollectionType.Disabled)) {
-            notificationText.append("\n DATA SOURCE DISABLED");
+            notificationText.append(getString(R.string.__data_source_disabled));
             if (!Experience.gotData()) {
                 // TODO should this move to Experience::processSteps ?
                 final Activity activity = this;
@@ -3519,7 +3519,7 @@ public class Home extends ActivityWithMenu implements ActivityCompat.OnRequestPe
 
             if (treatment_text.length() > 0) {
                 // display snackbar of the snackbar
-                final View.OnClickListener mOnClickListener = v -> Home.startHomeWithExtra(xdrip.getAppContext(), Home.CREATE_TREATMENT_NOTE, Long.toString(timestamp), Double.toString(position));
+                final View.OnClickListener mOnClickListener = v -> Home.startHomeWithExtra(xdrip.getAppContext(), Home.CREATE_TREATMENT_NOTE, Long.toString(timestamp), "-1"); // Let's not enter a y position to avoid having to worry about BG units
                 Home.snackBar(R.string.add_note, getString(R.string.added) + ":    " + treatment_text, mOnClickListener, mActivity);
             }
 
