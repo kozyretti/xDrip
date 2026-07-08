@@ -4,6 +4,7 @@ package com.eveningoutpost.dexdrip.utilitymodels;
 
 import android.app.Activity;
 
+import com.eveningoutpost.dexdrip.g5model.DexPairKeeper;
 import com.eveningoutpost.dexdrip.g5model.Ob1G5StateMachine;
 import com.eveningoutpost.dexdrip.GcmActivity;
 import com.eveningoutpost.dexdrip.Home;
@@ -61,10 +62,13 @@ public class VoiceCommands {
             MockDataSource.fixRaw();
         } else if (get_engineering_mode() && allWords.equals("speed up fake data source")) {
             JoH.static_toast_long("Speeding up fake data source");
-            MockDataSource.speedup();
+            MockDataSource.speedUp();
         } else if (get_engineering_mode() && allWords.equals("amplify fake data source")) {
             JoH.static_toast_long("Amplifying fake data source");
             MockDataSource.amplify();
+        } else if (get_engineering_mode() && allWords.equals("fake data source one minute")) {
+            JoH.static_toast_long("One-minute fake data interval");
+            MockDataSource.setInterval(1);
         } else if (allWords.contentEquals("set sensor code")) {
             G6CalibrationCodeDialog.ask(mActivity, null);
         } else if (allWords.contentEquals("multiple start")) {
@@ -132,6 +136,9 @@ public class VoiceCommands {
         } else if (allWords.contentEquals("disable dead sensor")) {
             Pref.setBoolean("allow_testing_with_dead_sensor", false);
             JoH.static_toast_long("testing with dead sensor disabled");
+        } else if (allWords.contentEquals("clear all pair keeper")) {
+            DexPairKeeper.clearAll();
+            JoH.static_toast_long("Cleared all pair keeper data");
         }
 
         switch (allWords) {

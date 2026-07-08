@@ -55,7 +55,9 @@ public class LibreOOPAlgorithm {
         Libre1New(1),
         LibreUS14Day(2),
         Libre2(3),
-        LibreProH(4);
+        LibreProH(4),
+        Libre2Plus(5),
+        Libre3(6);
 
         int value;
 
@@ -292,6 +294,9 @@ public class LibreOOPAlgorithm {
         if (SensorInfo == null) {
             return SensorType.Libre1;
         }
+        if (SensorInfo.length == 24) {
+            return SensorType.Libre3;
+        }
         int SensorNum = (SensorInfo[0] & 0xff) << 16 | (SensorInfo[1] & 0xff) << 8 | SensorInfo[2];
         switch (SensorNum) {
             case 0xdf0000:
@@ -303,9 +308,11 @@ public class LibreOOPAlgorithm {
                 return SensorType.LibreUS14Day;
             case 0x9d0830:
             case 0xc50930:
-            case 0xc60931:
-            case 0x7f0e31:	
+            case 0x7f0e30:
                 return SensorType.Libre2;
+            case 0xc60931:
+            case 0x7f0e31:
+                return SensorType.Libre2Plus;
             case 0x700010:
                 return SensorType.LibreProH;
         }
@@ -417,7 +424,7 @@ public class LibreOOPAlgorithm {
     // Functions that are used for an external decoder.
     static public boolean isDecodeableData(byte[] patchInfo) {
         SensorType sensorType = getSensorType(patchInfo);
-        return sensorType == SensorType.LibreUS14Day || sensorType == SensorType.Libre2;
+        return sensorType == SensorType.LibreUS14Day || sensorType == SensorType.Libre2 || sensorType == SensorType.Libre2Plus;
     }
 
     // Two variables that are used to see if oop2 is installed.

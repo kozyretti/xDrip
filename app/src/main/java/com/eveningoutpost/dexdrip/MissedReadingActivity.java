@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 
 import com.eveningoutpost.dexdrip.models.AlertType;
+import com.eveningoutpost.dexdrip.models.JoH;
 import com.eveningoutpost.dexdrip.models.UserError;
 import com.eveningoutpost.dexdrip.services.MissedReadingService;
 import com.eveningoutpost.dexdrip.utilitymodels.AlertPlayer;
@@ -35,6 +36,7 @@ public class MissedReadingActivity extends ActivityWithMenu {
     private CheckBox checkboxEnableAlert;
     private CheckBox checkboxAllDay;
     private CheckBox checkboxEnableReraise;
+    private CheckBox checkboxOverrideSilent;
     private String audioPath; // Local representation of the path to the sound file
     private EditText alertMp3File; // Sound file title
     
@@ -67,6 +69,7 @@ public class MissedReadingActivity extends ActivityWithMenu {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_missed_readings);
+        JoH.fixActionBar(this);
         mContext = this;
         
         viewTimeStart = (TextView) findViewById(R.id.missed_reading_time_start);
@@ -74,6 +77,7 @@ public class MissedReadingActivity extends ActivityWithMenu {
         buttonalertMp3 = (Button)findViewById(R.id.Button_mra_mp3_file);
         checkboxAllDay = (CheckBox) findViewById(R.id.missed_reading_all_day);
         checkboxEnableAlert = (CheckBox) findViewById(R.id.missed_reading_enable_alert);
+        checkboxOverrideSilent = (CheckBox) findViewById(R.id.bg_missed_alerts_override_silent);
         checkboxEnableReraise = (CheckBox) findViewById(R.id.missed_reading_enable_alerts_reraise);
         /** xDrip used to use the other alerts sound file for the missed readings alert.
          * To avoid causing an unexpected behavior for a previous user of xDrip, the missed reading alert
@@ -104,11 +108,13 @@ public class MissedReadingActivity extends ActivityWithMenu {
         boolean enableAlert = prefs.getBoolean("bg_missed_alerts",false);
         boolean allDay = prefs.getBoolean("missed_readings_all_day",true);
         boolean enableReraise = prefs.getBoolean("bg_missed_alerts_enable_alerts_reraise",false);
+        boolean overrideSilentMode = prefs.getBoolean("bg_missed_alerts_override_silent", false);
         audioPath = Pref.getString("bg_missed_alerts_sound", null);
         
         checkboxAllDay.setChecked(allDay);
         checkboxEnableAlert.setChecked(enableAlert);
         checkboxEnableReraise.setChecked(enableReraise);
+        checkboxOverrideSilent.setChecked(overrideSilentMode);
         
         startHour = AlertType.time2Hours(startMinutes);
         startMinute = AlertType.time2Minutes(startMinutes);
@@ -142,6 +148,7 @@ public class MissedReadingActivity extends ActivityWithMenu {
         prefs.edit().putBoolean("bg_missed_alerts", checkboxEnableAlert.isChecked()).apply();
         prefs.edit().putBoolean("missed_readings_all_day", checkboxAllDay.isChecked()).apply();
         prefs.edit().putBoolean("bg_missed_alerts_enable_alerts_reraise", checkboxEnableReraise.isChecked()).apply();
+        prefs.edit().putBoolean("bg_missed_alerts_override_silent", checkboxOverrideSilent.isChecked()).apply();
 
         MissedReadingService.delayedLaunch();
       //  context.startService(new Intent(context, MissedReadingService.class));
@@ -157,6 +164,7 @@ public class MissedReadingActivity extends ActivityWithMenu {
         timeInstructions.setEnabled(enabled);
         checkboxAllDay.setEnabled(enabled);
         checkboxEnableReraise.setEnabled(enabled);
+        checkboxOverrideSilent.setEnabled(enabled);
         bgMissedMinutes.setEnabled(enabled);
         bgMissedSnoozeMin.setEnabled(enabled);
         bgMissedReraiseSec.setEnabled(enabled);
@@ -207,6 +215,13 @@ public class MissedReadingActivity extends ActivityWithMenu {
         checkboxEnableReraise.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             //          @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                enableAllControls();
+            }
+        });
+
+        checkboxOverrideSilent.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            // @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
                 enableAllControls();
             }
         });

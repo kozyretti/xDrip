@@ -508,10 +508,12 @@ public class GcmActivity extends FauxActivity {
         }
     }
 
-    public static void sendPumpStatus(String json) {
+    public static boolean sendPumpStatus(String json) {
         if (JoH.pratelimit("gcm-psu", 180)) {
             sendMessage("psu", json);
+            return true;
         }
+        return false;
     }
 
     public static void sendNanoStatusUpdate(final String prefix, final String json) {
@@ -847,7 +849,7 @@ public class GcmActivity extends FauxActivity {
 
         if (!InstalledApps.isGooglePlayInstalled(xdrip.getAppContext())) {
             if (JoH.pratelimit("gms-missing-msg", 86400)) {
-                final String msg = "Google Play services - not installed!\nInstall it or disable xDrip+ sync options";
+                final String msg = "Google Play services - not installed!\nInstall it or disable xDrip sync options";
                 JoH.static_toast_long(msg);
                 Home.toaststaticnext(msg);
             }

@@ -32,6 +32,7 @@ import com.eveningoutpost.dexdrip.models.ActiveBluetoothDevice;
 import com.eveningoutpost.dexdrip.models.GlucoseData;
 import com.eveningoutpost.dexdrip.models.JoH;
 import com.eveningoutpost.dexdrip.models.Libre2SensorData;
+import com.eveningoutpost.dexdrip.models.Libre3;
 import com.eveningoutpost.dexdrip.models.LibreBlock;
 import com.eveningoutpost.dexdrip.models.LibreOOPAlgorithm;
 import com.eveningoutpost.dexdrip.models.ReadingData;
@@ -532,7 +533,8 @@ public class NFCReaderX {
             Libre2SensorData.setLibre2SensorData(patchUid, patchInfo, 42, 1, unlockData.second);
             byte[] nfc_command = unlockData.first;
 
-            final byte[] cmd = new byte[]{0x02, (byte) 0xa1, 0x07};
+            final byte manufacturerCode = patchUid[6];
+            final byte[] cmd = new byte[]{0x02, (byte) 0xa1, manufacturerCode};
             final byte[] full_cmd = new byte[cmd.length + nfc_command.length];
             System.arraycopy(cmd, 0, full_cmd, 0, cmd.length);
             System.arraycopy(nfc_command, 0, full_cmd, cmd.length, nfc_command.length);
@@ -633,11 +635,17 @@ public class NFCReaderX {
                         // if multiblock mode
                         JoH.benchmark(null);
 
+                        byte[] patchUid = tag.getId();
+                        Log.d(TAG, "patchUid = " + HexDump.dumpHexString(patchUid));
+
+                        final byte manufacturerCode = patchUid[6];
+                        Log.d(TAG, "NFC manufacturer code = 0x" + String.format("%02x", manufacturerCode));
+
                         Long time_patch = System.currentTimeMillis();
                         while (true) {
                             try {
 
-                                final byte[] cmd = new byte[]{0x02, (byte) 0xa1, 0x07};
+                                final byte[] cmd = new byte[]{0x02, (byte) 0xa1, manufacturerCode};
                                 patchInfo = nfcvTag.transceive(cmd);
                                 if (patchInfo != null) {
                                     // We need to throw away the first byte.
@@ -654,23 +662,40 @@ public class NFCReaderX {
                                 Thread.sleep(100);
                             }
                         }
+
+                        if (patchInfo[0] == (byte) 0xA5 && patchInfo.length >= 28) {
+                            Log.d(TAG, "Libre 3's 24-byte patchInfo will be extracted and CRC verified from " + HexDump.dumpHexString(patchInfo));
+                            long crc = ((patchInfo[patchInfo.length - 1] & 0xFF) << 8) | (patchInfo[patchInfo.length - 2] & 0xFF);
+                            byte[] extractedPatchInfo = Arrays.copyOfRange(patchInfo, patchInfo.length - 26, patchInfo.length - 2);
+                            long computedCRC = LibreUtils.computeCRC16(extractedPatchInfo, -2, extractedPatchInfo.length + 2);
+                            if (crc == computedCRC) {
+                                patchInfo = extractedPatchInfo;
+                            }
+                        }
+
                         Log.d(TAG, "patchInfo = " + HexDump.dumpHexString(patchInfo));
-                        byte[] patchUid = tag.getId();
-                        Log.d(TAG, "patchUid = " + HexDump.dumpHexString(patchUid));
-                        if (use_fake_de_data()) {
+
+                         if (use_fake_de_data()) {
                             patchUid = de_new_patch_uid;
                             patchInfo = de_new_patch_info;
                         }
 
                         SensorType sensorType = LibreOOPAlgorithm.getSensorType(patchInfo);
                         Log.uel(TAG, "Libre sensor of type " + sensorType.name() + " detected.");
+                        if (sensorType == SensorType.Libre3) {
+                            Libre3.parsePatchInfo(patchInfo);
+                        }
                         if (addressed && sensorType != SensorType.Libre1 && sensorType != SensorType.Libre1New) {
                             Log.d(TAG, "Not using addressed mode since not a libre 1 sensor");
                             addressed = false;
                         }
-                        if (sensorType == SensorType.Libre2) {
+                        if (sensorType == SensorType.Libre2 || sensorType == SensorType.Libre2Plus) {
                             startLibre2Streaming(nfcvTag, patchUid, patchInfo);
+                        }
+                        if (sensorType == SensorType.Libre2) {
                             PersistentStore.setString("LibreVersion", "2");
+                        } else if (sensorType == SensorType.Libre2Plus) {
+                            PersistentStore.setString("LibreVersion", "3");
                         } else {
                             PersistentStore.setString("LibreVersion", "1");
                         }
@@ -680,7 +705,7 @@ public class NFCReaderX {
                             for (int i = 0; i < 43; i = i + 3) {
                                 int read_blocks = 3;
                                 int correct_reply_size = addressed ? 28 : 25;
-                                if (i == 42 && sensorType == SensorType.Libre2) {
+                                if (i == 42 && (sensorType == SensorType.Libre2 || sensorType == SensorType.Libre2Plus)) {
                                     read_blocks = 1;
                                     correct_reply_size = 9;
                                 }

@@ -4,7 +4,10 @@ package com.eveningoutpost.dexdrip.utilitymodels;
  * Various constants
  */
 public class Constants {
-    public static final double MMOLL_TO_MGDL = 18.0182;
+    // Molar mass of glucose (C6H12O6) = 180.1559 g/mol
+    // Source: NIST Chemistry WebBook, SRD 69 (https://webbook.nist.gov/cgi/cbook.cgi?ID=C50997)
+    // Conversion factor: 1 mmol/L = 18.01559 mg/dL
+    public static final double MMOLL_TO_MGDL = 18.01559; //
     public static final double MGDL_TO_MMOLL = 1 / MMOLL_TO_MGDL;
 
 
@@ -55,6 +58,7 @@ public class Constants {
     public static final int WEBFOLLOW_SERVICE_FAILOVER_ID = 1028;
     public static final int BACKUP_ACTIVITY_ID = 1029;
     public static final int CARELINK_SERVICE_FAILOVER_ID = 1030;
+    public static final int GLUPRO_SERVICE_FAILOVER_ID = 1031;
 
     static final int NIGHTSCOUT_ERROR_NOTIFICATION_ID = 2001;
     public static final int HEALTH_CONNECT_RESPONSE_ID = 2002;
@@ -79,5 +83,6 @@ public class Constants {
     public static final int LIBREPRO_HEADER1_SIZE = 40;
     public static final int LIBREPRO_HEADER2_SIZE = 32;
     public static final int LIBREPRO_HEADER3_SIZE = 104;
+    public static final int MAX_READINGS_PER_HOUR = 60; // Upper bound on readings per hour xDrip may receive
 
 }
