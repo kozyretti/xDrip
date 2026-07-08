@@ -46,19 +46,20 @@ jobs:
     - name: Check expected APK output
       run: bash ./etc/CheckBuild/check-release.sh test
 
-    - name: Sign Release APK
+    - name: Sign app release APK
       id: sign_app
-      uses: r0adkll/sign-android-release@v1
+      uses: ilharp/sign-android-release@v2
       with:
-        releaseDirectory: app/build/outputs/apk/prod/release
-        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-        alias: ${{ secrets.KEY_ALIAS }}
+        releaseDir: app/build/outputs/apk/prod/release
+        signingKey: ${{ secrets.SIGNING_KEY }}
+        keyAlias: ${{ secrets.KEY_ALIAS }}
         keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
+        buildToolsVersion: 35.0.0
 
     - name: Upload Signed Release APK
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v4
       with:
-        name: xDrip-Signed-Release-APK
-        path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+        name: xdrip-app-prod-release-signed
+        path: ${{ steps.sign_app.outputs.signedFile }}
         if-no-files-found: error
