@@ -57,9 +57,19 @@ jobs:
         keyPassword: ${{ secrets.KEY_PASSWORD }}
         buildToolsVersion: 35.0.0
 
+    - name: Rename signed APK
+      id: rename_apk
+      run: |
+        APK_NAME=xDrip_$(date +'%d-%m-%Y')
+        APK_PATH=dist/${APK_NAME}.apk
+        mkdir -p dist
+        cp "${{ steps.sign_app.outputs.signedFile }}" ${APK_PATH}
+        echo "apk_name=${APK_NAME}" >> $GITHUB_OUTPUT
+        echo "apk_path=${APK_PATH}" >> $GITHUB_OUTPUT
+
     - name: Upload Signed Release APK
       uses: actions/upload-artifact@v4
       with:
-        name: xdrip-app-prod-release-signed
-        path: ${{ steps.sign_app.outputs.signedFile }}
+        name: ${{ steps.rename_apk.outputs.apk_name }}
+        path: ${{ steps.rename_apk.outputs.apk_path }}
         if-no-files-found: error
