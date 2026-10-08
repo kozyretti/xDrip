@@ -18,6 +18,7 @@ import com.activeandroid.query.Select;
 import com.activeandroid.util.SQLiteUtils;
 import com.eveningoutpost.dexdrip.GcmActivity;
 import com.eveningoutpost.dexdrip.Home;
+import com.eveningoutpost.dexdrip.alert.SensorExpiry;
 import com.eveningoutpost.dexdrip.g5model.DexSessionKeeper;
 import com.eveningoutpost.dexdrip.models.UserError.Log;
 import com.eveningoutpost.dexdrip.R;
@@ -156,7 +157,7 @@ public class Treatments extends Model {
     }
 
     // lazily populate and return InsulinInjection array from json
-    List<InsulinInjection> getInsulinInjections() {
+    public List<InsulinInjection> getInsulinInjections() {
        // Log.d(TAG,"get injections: "+insulinJSON);
         if (insulinInjections == null) {
             if (insulinJSON != null) {
@@ -188,7 +189,8 @@ public class Treatments extends Model {
     }
 
     // take a simple insulin value and produce a list assuming it is bolus insulin - for legacy conversion
-    static private List<InsulinInjection> convertLegacyDoseToBolusInjectionList(final double insulinSum) {
+    // package-private so the #4617 regression test can exercise the legacy IoB conversion directly
+    static List<InsulinInjection> convertLegacyDoseToBolusInjectionList(final double insulinSum) {
         final ArrayList<InsulinInjection> injections = new ArrayList<>();
         val profile = InsulinManager.getBolusProfile();
         if (profile != null) {
@@ -789,6 +791,11 @@ public class Treatments extends Model {
     private static void evaluateNotesForNotification(final Treatments mytreatment) {
         if (!emptyString(mytreatment.notes) && mytreatment.notes.startsWith("-")) {
             BlueJayEntry.sendNotifyIfEnabled(mytreatment.notes);
+        }
+        try {
+            SensorExpiry.evaluateReceivedNote(mytreatment.notes, mytreatment.timestamp);
+        } catch (Exception e) {
+            UserError.Log.wtf(TAG, "Error evaluating received note: " + e + " " + mytreatment.notes);
         }
     }
 
